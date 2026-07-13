@@ -36,7 +36,7 @@
     <div id="info"> Pendulum Synth</div>
     <script>
       let pendulums = [];
-      let numPendulums = 16; 
+      let numPendulums = 8; 
       let synth;
       let reverb;
       
@@ -112,7 +112,7 @@
           line(pivotX, pivotY, bobX, bobY);
           
           // Draw bob with glow effect
-          let bobSize = map(p.length, 80, 380, 12, 22);
+          let bobSize = map(p.length, 80, 380, 20, 35);
           
           // Glow layers
           for (let g = 3; g > 0; g--) {
