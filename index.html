@@ -1,0 +1,159 @@
+<html>
+  <head> 
+    <title>Pendulum Synth</title>
+  </head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #F7D6E0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Times New Roman', Serif;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    #info {
+      position: absolute;
+      bottom: 75px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      letter-spacing: 2px;
+      color: #8B4A5A;
+      font-weight: bold;
+    } 
+  </style>
+  <body>
+    <div id="info"> Pendulum Synth</div>
+    <script>
+      let pendulums = [];
+      let numPendulums = 16; 
+      let synth;
+      let reverb;
+      
+      // Pentatonic scale notes
+      const pentatonicNotes = [
+        'C4', 'D4', 'E4', 'G4', 'A4',
+        'C5', 'D5', 'E5', 'G5', 'A5',
+        'C6', 'D6', 'E6', 'G6', 'A6', 'C7'
+      ];
+
+      let lastTriggered = [];
+
+      function setup() {
+        let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+        createCanvas(canvasSize, canvasSize * 0.7);
+        
+        // Audio setup
+        userStartAudio();
+        synth = new p5.PolySynth();
+        reverb = new p5.Reverb();
+        reverb.set(3, 2); // Decay time: 3s, Wet/Dry mix: 2
+        synth.connect(reverb);
+
+        let startLength = 80;
+        let endLength = 380;
+        let spacing = (endLength - startLength) / (numPendulums - 1);
+        
+        for (let i = 0; i < numPendulums; i++) {
+          let length = startLength + i * spacing;
+          let angle = map(i, 0, numPendulums - 1, -0.3, 0.3);
+          
+          pendulums.push({
+            length: length,
+            angle: angle,
+            angVel: 0,
+            angAcc: 0,
+            noteIndex: i % pentatonicNotes.length,
+            prevAngle: angle
+          });
+          
+          lastTriggered[i] = false;
+        }
+      } 
+
+      function draw() {
+        background('#F7D6E0'); 
+        
+        for (let i = 0; i < pendulums.length; i++) {
+          let p = pendulums[i];
+          
+          // Physics
+          p.angAcc = (-0.5 / p.length) * sin(p.angle);
+          p.angVel += p.angAcc;
+          p.angVel *= 0.999;
+          p.angle += p.angVel;
+          
+          // Check trigger
+          if (p.prevAngle < 0 && p.angle >= 0) {
+            console.log("Note " + i);
+            triggerNote(i);
+          }
+          p.prevAngle = p.angle;
+          
+          // Calculate position
+          let pivotX = width / 2;
+          let pivotY = height * 0.15;
+          let bobX = pivotX + p.length * sin(p.angle);
+          let bobY = pivotY + p.length * cos(p.angle);
+          
+          // Draw rod
+          stroke(200, 150, 160);
+          strokeWeight(2);
+          line(pivotX, pivotY, bobX, bobY);
+          
+          // Draw bob with glow effect
+          let bobSize = map(p.length, 80, 380, 12, 22);
+          
+          // Glow layers
+          for (let g = 3; g > 0; g--) {
+            fill(255, 183, 197, 30 - g * 10);
+            noStroke();
+            ellipse(bobX, bobY, bobSize + g * 8);
+          }
+          
+          // Main bob
+          fill(255, 183, 197);
+          noStroke();
+          ellipse(bobX, bobY, bobSize);
+          
+          // Highlight on bob
+          fill(255, 255, 255, 80);
+          ellipse(bobX - bobSize * 0.2, bobY - bobSize * 0.2, bobSize * 0.3);
+        }
+      }
+
+      function triggerNote(index) {
+        let note = pentatonicNotes[index % pentatonicNotes.length];
+        let velocity = random(0.4, 0.8);
+        
+        synth.noteAttack(note, velocity);
+        
+        setTimeout(() => {
+          synth.noteRelease(note);
+        }, 300);
+      }
+
+      function mousePressed() {
+        // Browsers need user interaction to start audio
+        if (getAudioContext().state !== 'running') {
+          userStartAudio();
+        }
+      }            
+
+      function windowResized() {
+        let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
+        resizeCanvas(canvasSize, canvasSize * 0.7);
+      }
+    </script>                                        
+  </body>
+</html>
