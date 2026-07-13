@@ -33,18 +33,18 @@
     } 
   </style>
   <body>
-    <div id="info">🌸 Pendulum Synth</div>
+    <div id="info"> Pendulum Synth</div>
     <script>
       let pendulums = [];
-      let numPendulums = 13; 
+      let numPendulums = 8; 
       let synth;
       let reverb;
       
-      // YOUR MELODY LOOP
-      const melodyNotes = [
-        'A4', 'C4', 'E4', 'G4', 'B4', 'E4', 
-        'F4', 'A4', 'C4', 'F4', 'G4', 'B4', 'D4'
-      ];
+      //  MELODY LOOP
+     const melodyNotes = [
+  'A4', 'C4', 'E4', 'G4', 
+  'B4', 'D4', 'F4', 'A4'
+];
 
       let lastTriggered = [];
 
@@ -72,12 +72,17 @@
             angle: angle,
             angVel: 0,
             angAcc: 0,
-            noteIndex: i % melodyNotes.length, // FIXED: Changed from pentatonicNotes
+            noteIndex: i % melodyNotes.length, 
             prevAngle: angle
           });
           
           lastTriggered[i] = false;
         }
+        // In setup(), add an additional synth with different settings
+synth2 = new p5.PolySynth();
+synth2.connect(reverb);
+// Use a different waveform
+synth2.set('sawtooth'); // Adds richness
       } 
 
       function draw() {
@@ -93,9 +98,10 @@
           p.angle += p.angVel;
           
           // Check trigger
-          if (p.prevAngle < 0 && p.angle >= 0) {
-            console.log("Note " + i);
-            triggerNote(i);
+          // Trigger on ANY zero crossing (both directions)
+if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
+  triggerNote(i);
+}
           }
           p.prevAngle = p.angle;
           
@@ -129,26 +135,26 @@
           fill(255, 255, 255, 80);
           ellipse(bobX - bobSize * 0.2, bobY - bobSize * 0.2, bobSize * 0.3);
           
-          // OPTIONAL: Show note name below each bob
-          fill(80, 40, 50);
-          noStroke();
-          textAlign(CENTER, CENTER);
-          textSize(10);
-          let noteName = melodyNotes[i % melodyNotes.length];
-          text(noteName, bobX, bobY + 30);
+          
         }
       }
 
       function triggerNote(index) {
-        let note = melodyNotes[index % melodyNotes.length];
-        let velocity = random(0.4, 0.8);
-        
-        synth.noteAttack(note, velocity);
-        
-        setTimeout(() => {
-          synth.noteRelease(note);
-        }, 300);
-      }
+  let note = melodyNotes[index % melodyNotes.length];
+  let velocity = random(0.5, 0.9);
+  
+  // Main synth (sine wave - clean)
+  synth.noteAttack(note, velocity * 0.8);
+  
+  // Second synth (sawtooth - adds richness)
+  synth2.noteAttack(note, velocity * 0.3);
+  
+  setTimeout(() => {
+    synth.noteRelease(note);
+    synth2.noteRelease(note);
+  }, 600);
+}
+      
 
       function mousePressed() {
         if (getAudioContext().state !== 'running') {
