@@ -41,7 +41,7 @@
       let synth;
       let synth2;
       let reverb;
-      let audioInitialized = false; // FLAG TO TRACK AUDIO STATE
+      let audioInitialized = false;
       
       const melodyNotes = [
         'A4', 'C4', 'E4', 'G4', 
@@ -53,8 +53,6 @@
         let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
         createCanvas(canvasSize, canvasSize * 0.7);
         
-        // AUDIO SETUP REMOVED - WILL BE INITIALIZED ON CLICK
-
         let startLength = 80;
         let endLength = 380;
         let spacing = (endLength - startLength) / (numPendulums - 1);
@@ -92,6 +90,7 @@
           
           // --- TRIGGER CHECK ---
           if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
+            console.log("Trigger! Pendulum " + i); // DEBUG
             triggerNote(i);
           }
           p.prevAngle = p.angle;
@@ -128,36 +127,57 @@
 
       // ========== TRIGGER NOTE ==========
       function triggerNote(index) {
-        // Don't try to play audio if it's not initialized
-        if (!audioInitialized) return;
-
+        if (!audioInitialized) {
+          console.log("⏳ Audio not initialized yet!");
+          return;
+        }
+        
         let note = melodyNotes[index % melodyNotes.length];
         let velocity = random(0.5, 0.9);
         
-        synth.noteAttack(note, velocity * 0.8);
-        synth2.noteAttack(note, velocity * 0.3);
+        console.log("🔊 Playing " + note + " from pendulum " + index);
         
-        setTimeout(() => {
-          synth.noteRelease(note);
-          synth2.noteRelease(note);
-        }, 600);
+        try {
+          synth.noteAttack(note, velocity * 0.8);
+          synth2.noteAttack(note, velocity * 0.3);
+          
+          setTimeout(() => {
+            synth.noteRelease(note);
+            synth2.noteRelease(note);
+          }, 600);
+        } catch (error) {
+          console.error("Error playing note:", error);
+        }
       }
 
       // ========== MOUSE PRESSED ==========
       function mousePressed() {
         if (!audioInitialized) {
+          console.log("🔊 Initializing audio...");
+          
           userStartAudio();
-          synth = new p5.PolySynth();
-          synth2 = new p5.PolySynth();
-          synth2.set('sawtooth');
           
-          reverb = new p5.Reverb();
-          reverb.set(3, 2);
-          synth.connect(reverb);
-          synth2.connect(reverb);
-          
-          audioInitialized = true;
-          console.log("✅ Audio initialized! Click again to start the wave.");
+          // Make sure audio context is running
+          getAudioContext().resume().then(() => {
+            synth = new p5.PolySynth();
+            synth2 = new p5.PolySynth();
+            synth2.set('sawtooth');
+            
+            reverb = new p5.Reverb();
+            reverb.set(3, 2);
+            synth.connect(reverb);
+            synth2.connect(reverb);
+            
+            audioInitialized = true;
+            console.log("✅ Audio ready!");
+            
+            // Test note to confirm audio works
+            synth.noteAttack('C4', 0.5);
+            setTimeout(() => {
+              synth.noteRelease('C4');
+              console.log("✅ Test note played! Audio is working.");
+            }, 500);
+          });
         }
       }
 
