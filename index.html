@@ -38,13 +38,14 @@
       let pendulums = [];
       let numPendulums = 8; 
       let synth;
+      let synth2; // FIXED: Added this declaration
       let reverb;
       
-      //  MELODY LOOP
-     const melodyNotes = [
-  'A4', 'C4', 'E4', 'G4', 
-  'B4', 'D4', 'F4', 'A4'
-];
+      // MELODY LOOP
+      const melodyNotes = [
+        'A4', 'C4', 'E4', 'G4', 
+        'B4', 'D4', 'F4', 'A4'
+      ];
 
       let lastTriggered = [];
 
@@ -58,6 +59,11 @@
         reverb = new p5.Reverb();
         reverb.set(3, 2);
         synth.connect(reverb);
+
+        // Second synth for richness
+        synth2 = new p5.PolySynth();
+        synth2.connect(reverb);
+        synth2.set('sawtooth');
 
         let startLength = 80;
         let endLength = 380;
@@ -78,11 +84,6 @@
           
           lastTriggered[i] = false;
         }
-        // In setup(), add an additional synth with different settings
-synth2 = new p5.PolySynth();
-synth2.connect(reverb);
-// Use a different waveform
-synth2.set('sawtooth'); // Adds richness
       } 
 
       function draw() {
@@ -97,13 +98,11 @@ synth2.set('sawtooth'); // Adds richness
           p.angVel *= 0.999;
           p.angle += p.angVel;
           
-          // Check trigger
-          // Trigger on ANY zero crossing (both directions)
-if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
-  triggerNote(i);
-}
+          // Check trigger - FULL OSCILLATION (both directions)
+          if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
+            triggerNote(i);
           }
-          p.prevAngle = p.angle;
+          p.prevAngle = p.angle; // FIXED: Moved INSIDE the loop
           
           // Calculate position
           let pivotX = width / 2;
@@ -134,27 +133,24 @@ if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
           // Highlight on bob
           fill(255, 255, 255, 80);
           ellipse(bobX - bobSize * 0.2, bobY - bobSize * 0.2, bobSize * 0.3);
-          
-          
-        }
-      }
+        } // FIXED: This closes the for loop properly
+      } // FIXED: This closes the draw function
 
       function triggerNote(index) {
-  let note = melodyNotes[index % melodyNotes.length];
-  let velocity = random(0.5, 0.9);
-  
-  // Main synth (sine wave - clean)
-  synth.noteAttack(note, velocity * 0.8);
-  
-  // Second synth (sawtooth - adds richness)
-  synth2.noteAttack(note, velocity * 0.3);
-  
-  setTimeout(() => {
-    synth.noteRelease(note);
-    synth2.noteRelease(note);
-  }, 600);
-}
-      
+        let note = melodyNotes[index % melodyNotes.length];
+        let velocity = random(0.5, 0.9);
+        
+        // Main synth (sine wave - clean)
+        synth.noteAttack(note, velocity * 0.8);
+        
+        // Second synth (sawtooth - adds richness)
+        synth2.noteAttack(note, velocity * 0.3);
+        
+        setTimeout(() => {
+          synth.noteRelease(note);
+          synth2.noteRelease(note);
+        }, 600);
+      }
 
       function mousePressed() {
         if (getAudioContext().state !== 'running') {
