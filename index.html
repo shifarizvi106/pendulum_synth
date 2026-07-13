@@ -33,22 +33,21 @@
     } 
   </style>
   <body>
-    <div id="info"> Pendulum Synth</div>
+    <div id="info">🌸 Pendulum Synth</div>
     <script>
+      // ========== VARIABLES ==========
       let pendulums = [];
-      let numPendulums = 8; 
+      let numPendulums = 8;
       let synth;
-      let synth2; // FIXED: Added this declaration
+      let synth2;
       let reverb;
       
-      // MELODY LOOP
       const melodyNotes = [
         'A4', 'C4', 'E4', 'G4', 
         'B4', 'D4', 'F4', 'A4'
       ];
 
-      let lastTriggered = [];
-
+      // ========== SETUP ==========
       function setup() {
         let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
         createCanvas(canvasSize, canvasSize * 0.7);
@@ -56,14 +55,13 @@
         // Audio setup
         userStartAudio();
         synth = new p5.PolySynth();
+        synth2 = new p5.PolySynth();
+        synth2.set('sawtooth');
+        
         reverb = new p5.Reverb();
         reverb.set(3, 2);
         synth.connect(reverb);
-
-        // Second synth for richness
-        synth2 = new p5.PolySynth();
         synth2.connect(reverb);
-        synth2.set('sawtooth');
 
         let startLength = 80;
         let endLength = 380;
@@ -78,45 +76,44 @@
             angle: angle,
             angVel: 0,
             angAcc: 0,
-            noteIndex: i % melodyNotes.length, 
             prevAngle: angle
           });
-          
-          lastTriggered[i] = false;
         }
-      } 
+      }
 
+      // ========== DRAW ==========
       function draw() {
         background('#F7D6E0'); 
+        
+        let pivotX = width / 2;
+        let pivotY = height * 0.15;
         
         for (let i = 0; i < pendulums.length; i++) {
           let p = pendulums[i];
           
-          // Physics
+          // --- PHYSICS ---
           p.angAcc = (-0.5 / p.length) * sin(p.angle);
           p.angVel += p.angAcc;
           p.angVel *= 0.999;
           p.angle += p.angVel;
           
-          // Check trigger - FULL OSCILLATION (both directions)
+          // --- TRIGGER CHECK ---
           if ((p.prevAngle < 0 && p.angle >= 0) || (p.prevAngle > 0 && p.angle <= 0)) {
             triggerNote(i);
           }
-          p.prevAngle = p.angle; // FIXED: Moved INSIDE the loop
+          p.prevAngle = p.angle;
           
-          // Calculate position
-          let pivotX = width / 2;
-          let pivotY = height * 0.15;
+          // --- CALCULATE BOB POSITION ---
           let bobX = pivotX + p.length * sin(p.angle);
           let bobY = pivotY + p.length * cos(p.angle);
           
-          // Draw rod
+          // --- DRAW ROD ---
           stroke(200, 150, 160);
           strokeWeight(2);
           line(pivotX, pivotY, bobX, bobY);
           
-          // Draw bob with glow effect
-          let bobSize = map(p.length, 80, 380, 20, 35);
+          // --- DRAW BOB ---
+          let bobSize = map(p.length, 80, 380, 22, 38);
           
           // Glow layers
           for (let g = 3; g > 0; g--) {
@@ -130,20 +127,18 @@
           noStroke();
           ellipse(bobX, bobY, bobSize);
           
-          // Highlight on bob
+          // Highlight
           fill(255, 255, 255, 80);
           ellipse(bobX - bobSize * 0.2, bobY - bobSize * 0.2, bobSize * 0.3);
-        } // FIXED: This closes the for loop properly
-      } // FIXED: This closes the draw function
+        }
+      }
 
+      // ========== TRIGGER NOTE ==========
       function triggerNote(index) {
         let note = melodyNotes[index % melodyNotes.length];
         let velocity = random(0.5, 0.9);
         
-        // Main synth (sine wave - clean)
         synth.noteAttack(note, velocity * 0.8);
-        
-        // Second synth (sawtooth - adds richness)
         synth2.noteAttack(note, velocity * 0.3);
         
         setTimeout(() => {
@@ -152,12 +147,15 @@
         }, 600);
       }
 
+      // ========== MOUSE PRESSED ==========
       function mousePressed() {
         if (getAudioContext().state !== 'running') {
           userStartAudio();
+          console.log("Audio started!");
         }
-      }            
+      }
 
+      // ========== WINDOW RESIZED ==========
       function windowResized() {
         let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
         resizeCanvas(canvasSize, canvasSize * 0.7);
