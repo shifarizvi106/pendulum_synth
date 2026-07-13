@@ -41,6 +41,7 @@
       let synth;
       let synth2;
       let reverb;
+      let audioInitialized = false; // FLAG TO TRACK AUDIO STATE
       
       const melodyNotes = [
         'A4', 'C4', 'E4', 'G4', 
@@ -52,16 +53,7 @@
         let canvasSize = min(windowWidth * 0.9, windowHeight * 0.8, 900);
         createCanvas(canvasSize, canvasSize * 0.7);
         
-        // Audio setup
-        userStartAudio();
-        synth = new p5.PolySynth();
-        synth2 = new p5.PolySynth();
-        synth2.set('sawtooth');
-        
-        reverb = new p5.Reverb();
-        reverb.set(3, 2);
-        synth.connect(reverb);
-        synth2.connect(reverb);
+        // AUDIO SETUP REMOVED - WILL BE INITIALIZED ON CLICK
 
         let startLength = 80;
         let endLength = 380;
@@ -79,6 +71,7 @@
             prevAngle: angle
           });
         }
+        console.log("Setup complete! Click the page to start audio.");
       }
 
       // ========== DRAW ==========
@@ -135,6 +128,9 @@
 
       // ========== TRIGGER NOTE ==========
       function triggerNote(index) {
+        // Don't try to play audio if it's not initialized
+        if (!audioInitialized) return;
+
         let note = melodyNotes[index % melodyNotes.length];
         let velocity = random(0.5, 0.9);
         
@@ -149,9 +145,19 @@
 
       // ========== MOUSE PRESSED ==========
       function mousePressed() {
-        if (getAudioContext().state !== 'running') {
+        if (!audioInitialized) {
           userStartAudio();
-          console.log("Audio started!");
+          synth = new p5.PolySynth();
+          synth2 = new p5.PolySynth();
+          synth2.set('sawtooth');
+          
+          reverb = new p5.Reverb();
+          reverb.set(3, 2);
+          synth.connect(reverb);
+          synth2.connect(reverb);
+          
+          audioInitialized = true;
+          console.log("✅ Audio initialized! Click again to start the wave.");
         }
       }
 
